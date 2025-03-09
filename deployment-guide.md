@@ -355,6 +355,117 @@ If you have multiple container apps and want to clean up unused ones:
 az containerapp delete --name CONTAINER_APP_NAME --resource-group rg-ragagentic
 ```
 
+## Data Management
+
+### Uploading New Data
+
+After your application is deployed, you may want to add new documents to your search index. The application includes built-in tools to process and index new documents using the same pipelines that were used during deployment.
+
+#### Supported Document Formats
+
+You can upload and process various document formats:
+- PDF
+- DOCX
+- PPTX
+- HTML
+- TXT
+- JSON
+- Markdown (MD)
+
+#### Steps to Upload New Data
+
+1. **Add your new data files to the data directory:**
+   
+   ```bash
+   # Create a new folder for your data (optional)
+   mkdir -p data/new_documents
+   
+   # Copy your files into the data directory
+   # For example:
+   # cp /path/to/your/files/*.pdf data/new_documents/
+   ```
+
+2. **Make sure you're using the correct environment:**
+
+   ```bash
+   # Select the environment with your Azure resources
+   azd env select existing-resources
+   ```
+
+3. **Process all data (default behavior):**
+
+   ```bash
+   # Process all documents in the data directory and subdirectories
+   ./scripts/prepdocs.sh --category your-category-name
+   ```
+
+   This script will:
+   - Extract text from documents using Azure Document Intelligence
+   - Split documents into sections
+   - Generate embeddings using Azure OpenAI
+   - Upload documents to Azure Storage
+   - Index the content in Azure AI Search
+
+4. **Process only specific subdirectories:**
+
+   The prepdocs.sh script has a hardcoded file pattern `'./data/*'` that processes all files in the data directory. To process only specific subdirectories, you need to temporarily modify the script:
+
+   ```bash
+   # 1. Create a backup of the original script
+   cp ./scripts/prepdocs.sh ./scripts/prepdocs.sh.bak
+
+   # 2. Modify the script to target only the specific subdirectory
+   sed -i 's|./data/\*|./data/new_documents/specific-folder/\*|' ./scripts/prepdocs.sh
+
+   # 3. Run the script with your desired options
+   ./scripts/prepdocs.sh --category your-category-name
+
+   # 4. Restore the original script when done
+   mv ./scripts/prepdocs.sh.bak ./scripts/prepdocs.sh
+   ```
+
+   Replace `specific-folder` with the name of your subdirectory containing the files you want to process.
+
+### Data Files and Version Control
+
+The repository is configured to exclude data files from version control. This ensures that:
+
+1. Large document files don't bloat the repository size
+2. Sensitive or proprietary documents aren't accidentally shared
+3. Repository operations remain fast and efficient
+
+The `.gitignore` file includes rules to exclude:
+- The entire `data/new_documents/` directory
+- Common document formats in any data subdirectory
+- Backup files (*.bak)
+
+If you need to share specific data files with collaborators, consider using:
+- A shared cloud storage location
+- Azure Storage with controlled access
+- Separate data repositories for large datasets
+
+### Advanced Options for Data Processing
+
+The prepdocs script supports several options to customize processing:
+
+```bash
+# Use a specific category for documents (useful for filtering in the frontend)
+./scripts/prepdocs.sh --category marketing
+
+# Skip uploading individual file blobs (saves storage)
+./scripts/prepdocs.sh --skipblobs
+
+# Use a custom search index (specify index in environment variables first)
+azd env set AZURE_SEARCH_INDEX my-custom-index
+./scripts/prepdocs.sh
+
+# Remove all existing documents before indexing
+./scripts/prepdocs.sh --removeall
+
+# Combine multiple options
+./scripts/prepdocs.sh --category finance --skipblobs
+```
+
 ## Troubleshooting
 
 If you encounter issues during deployment:
