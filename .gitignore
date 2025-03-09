@@ -147,6 +147,18 @@ npm-debug.log*
 node_modules
 static/
 
+# Data directory - exclude user-uploaded documents
+data/new_documents/
+data/**/*.pdf
+data/**/*.docx
+data/**/*.pptx
+data/**/*.txt
+data/**/*.html
+data/**/*.json
+
+# Backup files
+*.bak
+
 data/**/*.md5
 
 .DS_Store
