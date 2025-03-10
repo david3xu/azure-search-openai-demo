@@ -534,4 +534,125 @@ azd env set VARIABLE_NAME new_value
 
 # Redeploy after code changes without reprovisioning resources
 azd deploy
-``` 
+```
+
+## Running the Application Locally
+
+For local development and testing, you can run the application on your machine. This is useful for developing new features, testing changes, and debugging.
+
+### Prerequisites
+
+1. You must have already deployed the app to Azure using `azd up`
+2. You should be in a dev container environment (VS Code Remote Container, GitHub Codespaces, etc.)
+3. Azure CLI and Azure Developer CLI (azd) should be installed and authenticated
+
+### Method 1: Using Start Scripts (Simplest)
+
+This method builds the frontend and runs the backend with hot reloading:
+
+```bash
+# Make sure you're authenticated with Azure
+azd auth login --use-device-code
+
+# Select the environment with your Azure resources
+azd env select existing-resources
+
+# Start the application
+./app/start.sh  # For Linux/macOS
+# OR
+./app/start.ps1  # For Windows
+```
+
+This will:
+1. Create a Python virtual environment if needed
+2. Install backend dependencies
+3. Install frontend dependencies
+4. Build the frontend
+5. Start the backend server on http://localhost:50505
+
+### Method 2: Frontend Hot Reloading for Development
+
+For active frontend development with instant updates:
+
+```bash
+# Terminal 1: Start the backend
+cd app/backend
+../../.venv/bin/python -m quart --app main:app run --port 50505 --host localhost --reload
+
+# Terminal 2: Start the frontend development server
+cd app/frontend
+npm install
+npm run dev
+```
+
+This enables:
+- Backend running on http://localhost:50505
+- Frontend dev server on http://localhost:5173
+- Hot reloading of frontend code (changes apply instantly)
+- Backend API requests from the frontend are automatically proxied
+
+### Method 3: VS Code Run and Debug
+
+For debugging with breakpoints:
+
+1. Open VS Code's Run and Debug panel
+2. Select "Frontend & Backend" from the dropdown
+3. Click the Play button
+
+This starts:
+- The backend with debugging enabled
+- The frontend with hot reloading
+- Allows setting breakpoints in both codebases
+
+### Local Development with Different Models
+
+You can test different models locally before deploying:
+
+```bash
+# Select your environment
+azd env select existing-resources
+
+# Configure the model (example: using gpt-4o-mini)
+azd env set AZURE_OPENAI_CHATGPT_MODEL gpt-4o-mini
+azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT gpt-4o-mini
+
+# Restart your local development server for changes to take effect
+```
+
+### Using a Local LLM (Optional)
+
+To save costs during development, you can use a local OpenAI-compatible model:
+
+```bash
+# Configure for local LLM
+azd env set USE_VECTORS false
+azd env set OPENAI_HOST local
+azd env set OPENAI_BASE_URL http://localhost:8080/v1
+```
+
+Note: When using a local LLM:
+- The "Chat" tab will only work if the model supports function calling
+- Search must be text-only (no vectors)
+- You must set `OPENAI_HOST` back to "azure" before deploying
+
+### Development Workflow Tips
+
+1. **Backend Development**:
+   - Main application logic is in `app/backend/app.py`
+   - Implementation approaches in `app/backend/approaches/` directory
+   - Python files auto-reload when using `--reload` flag
+
+2. **Frontend Development**:
+   - React components in `app/frontend/src/` directory
+   - Changes reflect instantly with `npm run dev`
+   - Use browser dev tools for debugging
+
+3. **Testing Changes**:
+   - Test locally first
+   - Use VS Code debugging for complex issues
+   - Deploy to Azure when ready using `azd deploy`
+
+4. **Environment Variables**:
+   - View current settings: `azd env get-values`
+   - Set new variables: `azd env set NAME VALUE`
+   - Always restart the local server after changing variables 
