@@ -263,9 +263,70 @@ azd deploy
 
 ## Model Upgrades
 
-### Upgrading to o3-mini Model
+### Model Deployment Strategies
 
-The o3-mini model offers enhanced reasoning capabilities, function calling, and tools support while being cost-efficient. Here's how to upgrade your existing deployment if the model is available in your region:
+There are two methods to update the OpenAI model used by your application:
+
+1. **Using Azure Developer CLI (azd)** - This updates environment variables, but may not always propagate correctly to the container app:
+   ```bash
+   # Select the existing environment
+   azd env select existing-resources
+   
+   # Set new model configuration
+   azd env set AZURE_OPENAI_CHATGPT_MODEL new-model-name
+   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT new-deployment-name
+   
+   # Deploy the changes
+   azd deploy
+   ```
+
+2. **Direct Container App Update (RECOMMENDED)** - This method directly updates the container app's environment variables, which is more reliable:
+   ```bash
+   # Update the container app directly
+   az containerapp update --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --set-env-vars AZURE_OPENAI_CHATGPT_MODEL=new-model-name AZURE_OPENAI_CHATGPT_DEPLOYMENT=new-deployment-name
+   ```
+
+After applying either method, always verify the update was successful:
+```bash
+# Verify the environment variables were updated
+az containerapp show --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --query "properties.template.containers[0].env[?name=='AZURE_OPENAI_CHATGPT_DEPLOYMENT' || name=='AZURE_OPENAI_CHATGPT_MODEL']" -o table
+```
+
+### Upgrading to gpt-4o-mini Model
+
+The gpt-4o-mini model offers enhanced reasoning capabilities, improved context handling, and better performance for complex tasks while being cost-efficient. Here's how to upgrade:
+
+1. **Create gpt-4o-mini Deployment in Azure OpenAI Service**:
+   - Go to Azure Portal → Azure OpenAI service (`ragagenticproject-openai`)
+   - Select "Model deployments" → "+ Deploy model"
+   - Choose "gpt-4o-mini" from the model list
+   - Name the deployment `gpt-4o-mini`
+   - Set appropriate TPM (Tokens Per Minute) based on your needs (e.g., 250K)
+   - Click "Deploy"
+
+2. **Update Your Application Using Direct Container App Update (RECOMMENDED)**:
+   ```bash
+   # Update the container app directly
+   az containerapp update --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --set-env-vars AZURE_OPENAI_CHATGPT_MODEL=gpt-4o-mini AZURE_OPENAI_CHATGPT_DEPLOYMENT=gpt-4o-mini
+   ```
+
+3. **Verify the Update**:
+   ```bash
+   # Verify the environment variables were updated
+   az containerapp show --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --query "properties.template.containers[0].env[?name=='AZURE_OPENAI_CHATGPT_DEPLOYMENT' || name=='AZURE_OPENAI_CHATGPT_MODEL']" -o table
+   ```
+
+**Benefits of gpt-4o-mini**:
+- Advanced reasoning capabilities
+- Better handling of complex instructions
+- Improved knowledge and factual accuracy
+- Stronger coding capabilities
+- Good balance of performance and cost-efficiency
+- Large context window support
+
+### Upgrading to o3-mini Model (If Available in Your Region)
+
+The o3-mini model offers enhanced reasoning capabilities, function calling, and tools support. Here's how to upgrade if it's available in your region:
 
 > **Note**: Model availability varies by region. Check which models are available in your OpenAI service region before attempting to deploy a new model.
 
@@ -288,32 +349,13 @@ The o3-mini model offers enhanced reasoning capabilities, function calling, and 
    - Set appropriate capacity units based on your needs
    - Click "Create"
 
-3. **Update Environment Variables**:
-   ```bash
-   # Select the existing environment
-   azd env select existing-resources
-   
-   # Set new model configuration
-   azd env set AZURE_OPENAI_CHATGPT_MODEL o3-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT o3-mini
-   azd env set AZURE_OPENAI_REASONING_EFFORT high
-   
-   # Verify settings
-   azd env get-values
-   ```
-
-4. **Deploy the Changes**:
-   ```bash
-   azd deploy
-   ```
-
-5. **If Deployment Doesn't Apply Changes, Update Container App Directly**:
+3. **Update Your Application Using Direct Container App Update (RECOMMENDED)**:
    ```bash
    # Update the container app directly
    az containerapp update --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --set-env-vars AZURE_OPENAI_CHATGPT_MODEL=o3-mini AZURE_OPENAI_CHATGPT_DEPLOYMENT=o3-mini AZURE_OPENAI_REASONING_EFFORT=high
    ```
 
-6. **Verify the Update**:
+4. **Verify the Update**:
    ```bash
    # Verify the environment variables were updated
    az containerapp show --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --query "properties.template.containers[0].env[?name=='AZURE_OPENAI_CHATGPT_DEPLOYMENT' || name=='AZURE_OPENAI_CHATGPT_MODEL']" -o table
@@ -328,10 +370,10 @@ The o3-mini model offers enhanced reasoning capabilities, function calling, and 
 
 ### Using Alternative Models
 
-If o3-mini isn't available in your region, you can use alternative models:
+If a specific model isn't available in your region, you can use alternative models:
 
 ```bash
-# Example: Updating to use gpt-35-turbo-16k (if available)
+# Example: Updating to use gpt-35-turbo-16k
 az containerapp update --name capps-backend-jxmgxni44tt5o --resource-group rg-ragagentic --set-env-vars AZURE_OPENAI_CHATGPT_MODEL=gpt-35-turbo-16k AZURE_OPENAI_CHATGPT_DEPLOYMENT=gpt-35-turbo-16k
 ```
 
